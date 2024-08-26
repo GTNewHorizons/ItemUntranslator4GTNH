@@ -44,7 +44,8 @@ public class DataProvider implements IWailaDataProvider {
 
             }
         }
-        if (englishName != null && !englishName.equals(currenttip.get(0))) {
+        if (englishName != null && !currenttip.get(0)
+            .contains(englishName)) {
             currenttip.add(1, englishName);
         }
         return currenttip;
