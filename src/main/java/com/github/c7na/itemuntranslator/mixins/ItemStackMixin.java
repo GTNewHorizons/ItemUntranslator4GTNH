@@ -15,34 +15,43 @@ import com.github.c7na.itemuntranslator.ItemUntranslator;
 @Mixin(ItemStack.class)
 public class ItemStackMixin {
 
-    private static int recursion = 0;
+    private static int recursionDepth;
 
-    @Inject(method = "getTooltip", at = @At("RETURN"))
-    public void getTooltip(EntityPlayer player, boolean showAdvancedItemTooltips,
-        CallbackInfoReturnable<List<String>> cir) {
-        ItemStack stack = ItemStack.class.cast(this);
-        List<String> arraylist = cir.getReturnValue();
+    @Inject(method = "getTooltip", at = @At("RETURN"), cancellable = true)
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private void itemuntranslator$appendEnglish(EntityPlayer player, boolean advanced,
+        CallbackInfoReturnable<List> cir) {
+        if (!ItemUntranslator.SHOW_TOOLTIP) return;
+        List arraylist = cir.getReturnValue();
+        if (arraylist == null || arraylist.isEmpty()) return;
 
-        String englishName;
+        ItemStack stack = (ItemStack) (Object) this;
+
+        if (ItemUntranslator.isBlacklisted(stack)) return;
+
+        String englishName = null;
         synchronized (ItemUntranslator.getTooltipLock) {
             try {
+                recursionDepth++;
                 if (ItemUntranslator.getTooltipThread == null) {
                     ItemUntranslator.getTooltipThread = Thread.currentThread();
-                } else {
-                    recursion++;
                 }
                 englishName = stack.getDisplayName();
             } finally {
-                if (recursion == 0) {
+                recursionDepth--;
+                if (recursionDepth <= 0) {
+                    recursionDepth = 0;
                     ItemUntranslator.getTooltipThread = null;
-                } else {
-                    recursion--;
                 }
-
             }
         }
-        if (englishName != null && !englishName.equals(arraylist.get(0))) {
-            arraylist.add(1, englishName);
+
+        if (englishName != null) {
+            Object first = arraylist.get(0);
+            if (first == null || !englishName.equals(first.toString())) {
+                arraylist.add(ItemUntranslator.EN_SUFFIX + englishName);
+                cir.setReturnValue(arraylist);
+            }
         }
     }
 }

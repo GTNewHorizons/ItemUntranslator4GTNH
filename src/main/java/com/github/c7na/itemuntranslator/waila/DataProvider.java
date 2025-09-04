@@ -26,6 +26,16 @@ public class DataProvider implements IWailaDataProvider {
     @Override
     public List<String> getWailaHead(ItemStack itemStack, List<String> currenttip, IWailaDataAccessor accessor,
         IWailaConfigHandler config) {
+
+        // --- наши новые условия ---
+        if (!ItemUntranslator.SHOW_WAILA || itemStack == null) {
+            return currenttip;
+        }
+        if (ItemUntranslator.isBlacklisted(itemStack)) {
+            return currenttip;
+        }
+        // --------------------------
+
         String englishName;
         synchronized (ItemUntranslator.getTooltipLock) {
             try {
@@ -44,10 +54,13 @@ public class DataProvider implements IWailaDataProvider {
 
             }
         }
+
         if (englishName != null && !currenttip.get(0)
             .contains(englishName)) {
-            currenttip.add(1, englishName);
+            // добавляем с префиксом [EN] для единообразия
+            currenttip.add(1, "[EN] " + englishName);
         }
+
         return currenttip;
     }
 
